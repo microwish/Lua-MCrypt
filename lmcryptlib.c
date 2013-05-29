@@ -9,7 +9,7 @@
 
 static int module_open(lua_State *L)
 {
-  const char *algorithm, *algorithm_dir, *mode, *mode_dir;
+	const char *algorithm, *algorithm_dir, *mode, *mode_dir;
 	size_t l;
 
 	if (lua_gettop(L) < 4)
