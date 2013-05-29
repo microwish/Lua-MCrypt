@@ -1,4 +1,4 @@
-NAME = lua-mcrypt-baidu
+NAME = lua-mcrypt
 VERSION = 0.1
 DIST := $(NAME)-$(VERSION)
 
