@@ -1,8 +1,3 @@
-/**
- * MCrypt lib for Lua
- * @version 0.1
- * @author caoguoliang@baidu.com
- */
 #include <mcrypt.h>
 
 #include <lua.h>//Lua 5.1.5
