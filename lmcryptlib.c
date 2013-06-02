@@ -113,20 +113,26 @@ static int generic_init(lua_State *L)
 	key_size = mcrypt_enc_get_key_size(*tdp);
 	if (key_len > (size_t)key_size) {
 		key_len = (size_t)key_size;
-		key[key_len] = 0;
 	}
 
 	iv_size = mcrypt_enc_get_iv_size(*tdp);
-	if (!(iv_s = calloc(iv_size + 1, sizeof(char))))
-		luaL_error(L, "Could not alloc IV");
-	memcpy(iv_s, iv, iv_size);
+	if (iv_size <= 0) {
+		iv_s = NULL;
+	} else {
+		if (!(iv_s = calloc(iv_size + 1, sizeof(char))))
+			luaL_error(L, "Could not alloc IV");
+		memcpy(iv_s, iv, iv_size);
+	}
 
 	mcrypt_generic_deinit(*tdp);
 
 	//TODO
 	//tell more specific errors according to returned codes
-	if (mcrypt_generic_init(*tdp, (void *)key, (int)key_len, (void *)iv_s) < 0)
+	if (mcrypt_generic_init(*tdp, (void *)key, (int)key_len, (void *)iv_s) < 0) {
+		free(iv_s);
 		return luaL_error(L, "MCrypt generic init failed");
+	}
+	free(iv_s);
 
 	return 0;
 }
@@ -153,9 +159,12 @@ static int generic(lua_State *L)
 			luaL_error(L, "Cloud not align block");
 		memcpy(plain_s, plain, l);
 
-		if(mcrypt_generic(*tdp, (void *)plain_s, data_size))
+		if(mcrypt_generic(*tdp, (void *)plain_s, data_size)) {
+			free(plain_s);
 			luaL_error(L, "MCrypt generic failed");
+		}
 		lua_pushlstring(L, plain_s, (size_t)data_size);
+		free(plain_s);
 	} else {
 		if(mcrypt_generic(*tdp, (void *)plain, (int)l))
 			luaL_error(L, "MCrypt generic failed");
@@ -187,9 +196,12 @@ static int de_generic(lua_State *L)
 			luaL_error(L, "Cloud not align block");
 		memcpy(ciphered_s, ciphered, l);
 
-		if(mdecrypt_generic(*tdp, (void *)ciphered_s, data_size))
+		if(mdecrypt_generic(*tdp, (void *)ciphered_s, data_size)) {
+			free(ciphered_s);
 			luaL_error(L, "MCrypt de-generic failed");
+		}
 		lua_pushlstring(L, ciphered_s, (size_t)data_size);
+		free(ciphered_s);
 	} else {
 		if (mdecrypt_generic(*tdp, (void *)ciphered, (int)l))
 			luaL_error(L, "MCrypt de-generic failed");
