@@ -1,4 +1,4 @@
-NAME = lua-mcrypt
+NAME = lua-mcrypt-baidu
 VERSION = 0.1
 DIST := $(NAME)-$(VERSION)
 
@@ -13,15 +13,16 @@ RM = rm -rf
 # INSTALL_PATH := $(pkg-config $(LUAPKG) --variable=INSTALL_CMOD)
 
 #Else
-#CFLAGS = -Wall -fPIC -I/home/microwish/lib/libmcrypt/include -I/home/microwishlua/include
-CFLAGS = -Wall -O2 -fPIC -I/home/microwish/lib/libmcrypt/include -I/home/microwish/lua/include
-LFLAGS = -shared -L/home/microwish/lib/libmcrypt/lib -lmcrypt -L/home/microwish/lua/lib -llua
-INSTALL_PATH = /home/microwish/lua-mcrypt/lib
+CFLAGS = -Wall -fPIC -I/home/microwish/lib/libmcrypt/include -I/home/microwish/lua/include
+#CFLAGS = -Wall -O2 -fPIC -I/home/microwish/lib/libmcrypt/include -I/home/microwish/lua/include
+#LFLAGS = -shared -L/home/microwish/lib/libmcrypt/lib -lmcrypt -L/home/microwish/lua/lib -llua
+LFLAGS = -shared -ldl  -L/home/microwish/lua/lib -llua -Wl,--rpath=/home/microwish/lib/libmcrypt/lib
+INSTALL_PATH = /home/microwish/lua-mcrypt-baidu/lib
 
 all: mcrypt.so
 
 mcrypt.so: mcrypt.o
-  $(CC) -o $@ $< $(LFLAGS)
+	$(CC) -o $@ $< $(LFLAGS)
 
 mcrypt.o: lmcryptlib.c
 	$(CC) -o $@ $(CFLAGS) -c $<
