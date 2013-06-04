@@ -21,7 +21,7 @@ static void *mcrypt_lib_handler = NULL;
 	do { \
 		if (!mcrypt_lib_handler) { \
 			if (!(mcrypt_lib_handler = \
-						dlopen("/home/microwish/lib/libmcrypt/lib/libmcrypt.so", RTLD_LAZY))) \
+						dlopen("/home/work/lib/libmcrypt/lib/libmcrypt.so", RTLD_LAZY))) \
 				luaL_error(L, "Loading MCrypt lib failed"); \
 		} \
 	} while (0)
@@ -42,32 +42,55 @@ static OneArgFunc get_key_size_func = NULL,
 					generic_deinit_func = NULL,
 					is_block_mode_func = NULL;
 
+enum {
+	MCRYPT_GENERIC_DEINIT_FUNC = 0,
+	MCRYPT_ENC_GET_KEY_SIZE_FUNC,
+	MCRYPT_ENC_GET_IV_SIZE_FUNC,
+	MCRYPT_ENC_GET_BLOCK_SIZE_FUNC,
+	MCRYPT_ENC_IS_BLOCK_MODE_FUNC
+};
+
+static const char *mcrypt_funcs[] = {
+	"mcrypt_generic_deinit",
+	"mcrypt_enc_get_key_size",
+	"mcrypt_enc_get_iv_size",
+	"mcrypt_enc_get_block_size",
+	"mcrypt_enc_is_block_mode"
+};
+
 //TODO
-//1) error processing 2) eliminate string comparison
-#define DL_MCRYPT_FUNC(func_name) \
+//error processing
+#define DL_MCRYPT_FUNC(func_id) \
 	do { \
-		if (!strcmp(func_name, "mcrypt_generic_deinit")) { \
-			if (!generic_deinit_func) { \
-				generic_deinit_func = (OneArgFunc)dlsym(mcrypt_lib_handler, func_name); \
-			} \
-		} else if (!strcmp(func_name, "mcrypt_enc_get_key_size")) { \
-			if (!get_key_size_func) { \
-				get_key_size_func = (OneArgFunc)dlsym(mcrypt_lib_handler, func_name); \
-			} \
-		} else if (!strcmp(func_name, "mcrypt_enc_get_iv_size")) { \
-			if (!get_iv_size_func) { \
-				get_iv_size_func = (OneArgFunc)dlsym(mcrypt_lib_handler, func_name); \
-			} \
-		} else if (!strcmp(func_name, "mcrypt_enc_get_block_size")) { \
-			if (!get_block_size_func) { \
-				get_block_size_func = (OneArgFunc)dlsym(mcrypt_lib_handler, func_name); \
-			} \
-		} else if (!strcmp(func_name, "mcrypt_enc_is_block_mode")) { \
-			if (!is_block_mode_func) { \
-				is_block_mode_func = (OneArgFunc)dlsym(mcrypt_lib_handler, func_name); \
-			} \
+		switch (func_id) { \
+			case MCRYPT_GENERIC_DEINIT_FUNC: \
+				if (!generic_deinit_func) { \
+					generic_deinit_func = (OneArgFunc)dlsym(mcrypt_lib_handler, mcrypt_funcs[func_id]); \
+				} \
+				break; \
+			case MCRYPT_ENC_GET_KEY_SIZE_FUNC: \
+				if (!get_key_size_func) { \
+					get_key_size_func = (OneArgFunc)dlsym(mcrypt_lib_handler, mcrypt_funcs[func_id]); \
+				} \
+				break; \
+			case MCRYPT_ENC_GET_IV_SIZE_FUNC: \
+				if (!get_iv_size_func) { \
+					get_iv_size_func = (OneArgFunc)dlsym(mcrypt_lib_handler, mcrypt_funcs[func_id]); \
+				} \
+				break; \
+			case MCRYPT_ENC_GET_BLOCK_SIZE_FUNC: \
+				if (!get_block_size_func) { \
+					get_block_size_func = (OneArgFunc)dlsym(mcrypt_lib_handler, mcrypt_funcs[func_id]); \
+				} \
+				break; \
+			case MCRYPT_ENC_IS_BLOCK_MODE_FUNC: \
+				if (!is_block_mode_func) { \
+					is_block_mode_func = (OneArgFunc)dlsym(mcrypt_lib_handler, mcrypt_funcs[func_id]); \
+				} \
+				break; \
 		} \
 	} while (0)
+
 
 static int module_open(lua_State *L)
 {
@@ -141,7 +164,7 @@ static int enc_get_key_size(lua_State *L)
 
 	DL_MCRYPT_LIB;
 
-	DL_MCRYPT_FUNC("mcrypt_enc_get_key_size");
+	DL_MCRYPT_FUNC(MCRYPT_ENC_GET_KEY_SIZE_FUNC);
 
 	size = get_key_size_func(*tdp);
 	lua_pushinteger(L, (lua_Integer)size);
@@ -158,7 +181,7 @@ static int enc_get_iv_size(lua_State *L)
 
 	DL_MCRYPT_LIB;
 
-	DL_MCRYPT_FUNC("mcrypt_enc_get_iv_size");
+	DL_MCRYPT_FUNC(MCRYPT_ENC_GET_IV_SIZE_FUNC);
 
 	size = get_iv_size_func(*tdp);
 	lua_pushinteger(L, (lua_Integer)size);
@@ -194,14 +217,14 @@ static int generic_init(lua_State *L)
 
 	DL_MCRYPT_LIB;
 
-	DL_MCRYPT_FUNC("mcrypt_enc_get_key_size");
+	DL_MCRYPT_FUNC(MCRYPT_ENC_GET_KEY_SIZE_FUNC);
 
 	key_size = get_key_size_func(*tdp);
 	if (key_len > (size_t)key_size) {
 		key_len = (size_t)key_size;
 	}
 
-	DL_MCRYPT_FUNC("mcrypt_enc_get_iv_size");
+	DL_MCRYPT_FUNC(MCRYPT_ENC_GET_IV_SIZE_FUNC);
 
 	iv_size = get_iv_size_func(*tdp);
 	if (iv_size <= 0) {
@@ -214,7 +237,7 @@ static int generic_init(lua_State *L)
 		memcpy(iv_s, iv, iv_size);
 	}
 
-	DL_MCRYPT_FUNC("mcrypt_generic_deinit");
+	DL_MCRYPT_FUNC(MCRYPT_GENERIC_DEINIT_FUNC);
 	generic_deinit_func(*tdp);
 
 	//TODO
@@ -257,9 +280,9 @@ static int generic(lua_State *L)
 	//error processing
 	GenericFunc generic_func = dlsym(mcrypt_lib_handler, "mcrypt_generic");
 
-	DL_MCRYPT_FUNC("mcrypt_enc_is_block_mode");
+	DL_MCRYPT_FUNC(MCRYPT_ENC_IS_BLOCK_MODE_FUNC);
 	if (is_block_mode_func(*tdp) == 1) {
-		DL_MCRYPT_FUNC("mcrypt_enc_get_block_size");
+		DL_MCRYPT_FUNC(MCRYPT_ENC_GET_BLOCK_SIZE_FUNC);
 		int block_size = get_block_size_func(*tdp);
 		int data_size = ((l - 1) / block_size + 1) * block_size;
 		char *plain_s = calloc(data_size + 1, sizeof(char));
@@ -311,9 +334,9 @@ static int de_generic(lua_State *L)
 	//error processing
 	GenericFunc de_generic_func = dlsym(mcrypt_lib_handler, "mdecrypt_generic");
 
-	DL_MCRYPT_FUNC("mcrypt_enc_is_block_mode");
+	DL_MCRYPT_FUNC(MCRYPT_ENC_IS_BLOCK_MODE_FUNC);
 	if (is_block_mode_func(*tdp) == 1) {
-		DL_MCRYPT_FUNC("mcrypt_enc_get_block_size");
+		DL_MCRYPT_FUNC(MCRYPT_ENC_GET_BLOCK_SIZE_FUNC);
 		int block_size = get_block_size_func(*tdp);
 		int data_size = ((l - 1) / block_size + 1) * block_size;
 		char *ciphered_s = calloc(data_size + 1, sizeof(char));
@@ -349,7 +372,7 @@ static int generic_deinit(lua_State *L)
 
 	DL_MCRYPT_LIB;
 
-	DL_MCRYPT_FUNC("mcrypt_generic_deinit");
+	DL_MCRYPT_FUNC(MCRYPT_GENERIC_DEINIT_FUNC);
 
 	if (generic_deinit_func(*tdp) < 0) {
 		DL_MCRYPT_DEREF;
