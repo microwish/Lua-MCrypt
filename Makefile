@@ -15,8 +15,7 @@ RM = rm -rf
 #Else
 CFLAGS = -Wall -fPIC -I/home/microwish/lib/libmcrypt/include -I/home/microwish/lua/include
 #CFLAGS = -Wall -O2 -fPIC -I/home/microwish/lib/libmcrypt/include -I/home/microwish/lua/include
-#LFLAGS = -shared -L/home/microwish/lib/libmcrypt/lib -lmcrypt -L/home/microwish/lua/lib -llua
-LFLAGS = -shared -ldl  -L/home/microwish/lua/lib -llua -Wl,--rpath=/home/microwish/lib/libmcrypt/lib
+LFLAGS = -shared -Wl,--rpath=/home/microwish/lib/libmcrypt/lib -L/home/microwish/lib/libmcrypt/lib -lmcrypt -L/home/microwish/caoguoliang/lua/lib -llua
 INSTALL_PATH = /home/microwish/lua-mcrypt-baidu/lib
 
 all: mcrypt.so
