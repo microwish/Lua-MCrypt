@@ -252,6 +252,11 @@ static const struct luaL_Reg mcrypt_lib[] = {
 	{ NULL, NULL }
 };
 
+static int settablereadonly(lua_State *L)
+{
+	return luaL_error(L, "Must not update a read-only table");
+}
+
 #define LUA_MCRYPTLIBNAME "mcrypt"
 
 LUALIB_API int luaopen_mcrypt(lua_State *L)
@@ -259,7 +264,19 @@ LUALIB_API int luaopen_mcrypt(lua_State *L)
 	lua_createtable(L, 1, 0);
 	lua_replace(L, LUA_ENVIRONINDEX);
 
+	//main table for this module
+	lua_newtable(L);
+
+	//metatable for the main table
+	lua_createtable(L, 0, 2);
+
 	luaL_register(L, LUA_MCRYPTLIBNAME, mcrypt_lib);
+
+	lua_setfield(L, -2, "__index");
+	lua_pushcfunction(L, settablereadonly);
+	lua_setfield(L, -2, "__newindex");
+
+	lua_setmetatable(L, -2);
 
 	return 1;
 }
